@@ -5,14 +5,14 @@
 </h3>
 
 <p align="center">
-  <a href="https://xavierzhang2002.github.io/SCOUT-page/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
+  <a href="https://xavierzhang2002.github.io/scout-page/"><img src="https://img.shields.io/badge/Project-Page-blue?style=flat-square" alt="Project Page"></a>
   <img src="https://img.shields.io/badge/python-3.12+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/Context-1M%2B%20tokens-brightgreen?style=flat-square" alt="Context">
   <img src="https://img.shields.io/badge/Built%20on-Claude%20Agent%20SDK-orange?style=flat-square" alt="SDK">
 </p>
 
 <p align="center">
-  <a href="https://xavierzhang2002.github.io/SCOUT-page/">Paper & Project Page</a> &bull;
+  <a href="https://xavierzhang2002.github.io/scout-page/">Paper & Project Page</a> &bull;
   <a href="#about-this-repo">About This Repo</a> &bull;
   <a href="#quick-start">Quick Start</a> &bull;
   <a href="#configuration">Configuration</a> &bull;
