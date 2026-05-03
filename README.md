@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/scout_logo.png" alt="Scout Logo" width="120">
+</p>
+
 <h1 align="center">Scout (Open-Source)</h1>
 
 <h3 align="center">
@@ -211,8 +215,6 @@ scout-open/
 
 - **Planner** — Analyzes the query, decomposes into sub-tasks and search strategies
 - **Evaluator** — Reviews the workspace, determines if collected information is sufficient
-
-Both can be disabled (`--no-planner`, `--no-evaluator`) for ablation or when using simpler queries.
 
 ---
 
