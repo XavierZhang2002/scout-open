@@ -28,17 +28,11 @@
 
 ## About This Repo
 
-The Scout Agent described in our paper is built on an **enterprise-internal agent framework** with no current plans for open-source release. However, to promote community development and reproducibility, we re-implemented Scout using the **[Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python)** — a free, publicly available agent development framework.
+This is the open-source implementation of the paper *"SCOUT: Active Information Foraging for Long-Text Understanding with Decoupled Epistemic States"* (ICML 2026).
 
-**This repository is that open-source implementation.**
+The Scout Agent in the paper is built on an enterprise-internal agent framework with no current plans for open-source release. To promote community development and reproducibility, we re-implemented Scout using the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) — a free, publicly available agent development framework. This repository is that open-source implementation.
 
-The core methodology remains identical:
-- Active information foraging (vs. passive full-text processing)
-- Decoupled epistemic states (interaction history H_t separated from verified knowledge E_t)
-- Three-phase foraging strategy (Orient → Forage → Verify)
-- Gap-diagnosed convergence via sufficiency evaluation
-
-Due to differences between the two agent frameworks, there are some implementation-level distinctions (e.g., behavioral enforcement via SDK Hooks instead of framework-native policies). Through testing, **this open-source version achieves performance comparable to the original**.
+The core methodology remains identical — active information foraging, decoupled epistemic states, three-phase foraging strategy, and gap-diagnosed convergence. Due to differences between agent frameworks, there are some implementation-level distinctions (e.g., behavioral enforcement via SDK Hooks instead of framework-native policies). Through testing, this open-source version achieves performance comparable to the original.
 
 ---
 
@@ -228,12 +222,6 @@ scout-open/
 
 - [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) — The agent framework powering this open-source implementation
 - [Claude Code Router](https://github.com/musistudio/claude-code-router) — API routing proxy (bundled in `proxy/`)
-
----
-
-## License
-
-MIT
 
 ---
 
