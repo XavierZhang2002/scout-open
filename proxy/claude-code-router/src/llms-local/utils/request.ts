@@ -237,7 +237,7 @@ export function sendUnifiedRequest(
               logger?.info(
                 {
                   reqId: context.req.id,
-                  // 请求信息
+                  // Request information
                   requestModel: request.model,
                   requestProvider: context.req.provider,
                   requestHasTools: !!request.tools && request.tools.length > 0,

@@ -6,37 +6,37 @@ import { readFileSync } from "fs";
 const execPromise = promisify(exec);
 
 /**
- * 检查是否有新版本可用
- * @param currentVersion 当前版本
- * @returns 包含更新信息的对象
+ * Check if a new version is available
+ * @param currentVersion Current version
+ * @returns Object containing update information
  */
 export async function checkForUpdates(currentVersion: string) {
   try {
-    // 从npm registry获取最新版本信息
+    // Get latest version info from npm registry
     const { stdout } = await execPromise("npm view @musistudio/claude-code-router version");
     const latestVersion = stdout.trim();
     
-    // 比较版本
+    // Compare versions
     const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
-    
-    // 如果有更新，获取更新日志
+
+    // If there's an update, get the changelog
     let changelog = "";
     
     return { hasUpdate, latestVersion, changelog };
   } catch (error) {
     console.error("Error checking for updates:", error);
-    // 如果检查失败，假设没有更新
+    // If check fails, assume no update
     return { hasUpdate: false, latestVersion: currentVersion, changelog: "" };
   }
 }
 
 /**
- * 执行更新操作
- * @returns 更新结果
+ * Perform update operation
+ * @returns Update result
  */
 export async function performUpdate() {
   try {
-    // 执行npm update命令
+    // Execute npm update command
     const { stdout, stderr } = await execPromise("npm update -g @musistudio/claude-code-router");
     
     if (stderr) {
@@ -59,9 +59,9 @@ export async function performUpdate() {
 }
 
 /**
- * 比较两个版本号
- * @param v1 版本号1
- * @param v2 版本号2
+ * Compare two version numbers
+ * @param v1 Version number 1
+ * @param v2 Version number 2
  * @returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal
  */
 function compareVersions(v1: string, v2: string): number {

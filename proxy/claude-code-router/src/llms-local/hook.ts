@@ -155,7 +155,7 @@ function process_messages(messages: any[], context?: any) {
                                 console.log('[TOOL_RESULT_HOOK] Found tool_result');
                                 console.log('[TOOL_RESULT_HOOK] Original item:', JSON.stringify(item, null, 2));
                                 
-                                // 提取第一个元素的 text
+                                // Extract the text from the first element
                                 if (item.content.length > 0 && item.content[0].text) {
                                     const extractedText = item.content[0].text;
                                     console.log('[TOOL_RESULT_HOOK] Extracted text:', extractedText);

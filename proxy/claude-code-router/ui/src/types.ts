@@ -34,7 +34,7 @@ export interface StatusLineModuleConfig {
   text: string;
   color?: string;
   background?: string;
-  scriptPath?: string; // 用于script类型的模块，指定要执行的Node.js脚本文件路径
+  scriptPath?: string; // For script type modules, specifies the Node.js script file path to execute
 }
 
 export interface StatusLineThemeConfig {

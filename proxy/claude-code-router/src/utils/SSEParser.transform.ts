@@ -10,7 +10,7 @@ export class SSEParserTransform extends TransformStream<string, any> {
                 this.buffer += text;
                 const lines = this.buffer.split('\n');
 
-                // 保留最后一行（可能不完整）
+                // Keep the last line (may be incomplete)
                 this.buffer = lines.pop() || '';
 
                 for (const line of lines) {
@@ -21,14 +21,14 @@ export class SSEParserTransform extends TransformStream<string, any> {
                 }
             },
             flush: (controller) => {
-                // 处理缓冲区中剩余的内容
+                // Process remaining content in the buffer
                 if (this.buffer.trim()) {
                     const events: any[] = [];
                     this.processLine(this.buffer.trim(), events);
                     events.forEach(event => controller.enqueue(event));
                 }
 
-                // 推送最后一个事件（如果有）
+                // Push the last event (if any)
                 if (Object.keys(this.currentEvent).length > 0) {
                     controller.enqueue(this.currentEvent);
                 }

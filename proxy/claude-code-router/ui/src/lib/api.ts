@@ -1,6 +1,6 @@
 import type { Config, Provider, Transformer } from '@/types';
 
-// 日志聚合响应类型
+// Log aggregation response type
 interface GroupedLogsResponse {
   grouped: boolean;
   groups: { [reqId: string]: Array<{ timestamp: string; level: string; message: string; source?: string; reqId?: string }> };
