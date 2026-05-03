@@ -1,0 +1,97 @@
+# ======================================================================
+#  Scout Configuration
+#  Copy this file to config.yaml and fill in your values.
+# ======================================================================
+
+# -- API Connection ----------------------------------------------------
+# Scout requires an Anthropic Messages API-compatible endpoint.
+# There are two ways to connect:
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ Option A: Through Claude Code Router (CCR) — recommended           │
+# │                                                                     │
+# │ CCR is a local proxy (included in proxy/) that translates           │
+# │ Anthropic Messages API into OpenAI/other formats, allowing you      │
+# │ to use DeepSeek, Qwen, GPT, Gemini, Claude, and more.              │
+# │                                                                     │
+# │ Setup:                                                              │
+# │   1. Configure your providers in proxy/.claude-code-router/         │
+# │      config.json (copy from config.example.json)                    │
+# │   2. Start CCR: cd proxy && bash deploy.bash                        │
+# │   3. Use the settings below (base_url = localhost:3456)             │
+# │                                                                     │
+# │ The "model" field uses "provider,model_name" format.                │
+# │ The provider name must match a provider configured in CCR's         │
+# │ config.json. See proxy/README.md for full CCR configuration.        │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ Option B: Direct Anthropic API                                      │
+# │                                                                     │
+# │ If you have direct access to an Anthropic-compatible endpoint       │
+# │ (e.g., api.anthropic.com), point base_url directly at it.           │
+# │ No CCR needed in this case.                                         │
+# └─────────────────────────────────────────────────────────────────────┘
+
+api:
+  base_url: "http://localhost:3456"
+  auth_token: "YOUR_AUTH_TOKEN"
+  model: "venus,deepseek-v3.1-terminus"
+
+# -- Model Examples (via CCR) ------------------------------------------
+# Uncomment ONE of the following to switch models.
+# The format is "provider_name,model_name" where provider_name must be
+# defined in your proxy/.claude-code-router/config.json.
+#
+# DeepSeek (via OpenRouter):
+#   model: "openrouter,deepseek/deepseek-chat"
+#
+# Claude Sonnet (via OpenRouter):
+#   model: "openrouter,anthropic/claude-sonnet-4.5"
+#
+# DeepSeek (direct API, provider "ds" in CCR config):
+#   model: "ds,deepseek-chat"
+#
+# Qwen (via self-hosted vLLM, provider "vllm" in CCR config):
+#   model: "vllm,Qwen_Qwen3-30B-A3B-Instruct-2507"
+#
+# GPT-5 (via Azure, provider "azure" in CCR config):
+#   model: "azure,gpt-5"
+#
+# Gemini (via Vertex proxy, provider "vertex" in CCR config):
+#   model: "vertex,gemini-2.5-pro"
+#
+# -- Direct Anthropic API (no CCR) ------------------------------------
+# If using Option B (direct API), configure like this:
+#
+#   base_url: "https://api.anthropic.com"
+#   auth_token: "sk-ant-xxxxxxxxxxxxxxxx"
+#   model: "claude-sonnet-4-20250514"
+
+# -- Evaluation LLM (optional) ----------------------------------------
+# Used by workspace_evaluate when Evaluator SubAgent is disabled.
+# Requires an OpenAI-compatible chat completions endpoint.
+# Leave empty to skip LLM-based evaluation.
+eval:
+  api_key: ""
+  base_url: ""
+  model: "claude-4-5-sonnet-20250929"
+
+# -- Agent Behavior ----------------------------------------------------
+agent:
+  max_turns: 200
+  use_planner: true
+  use_evaluator: true
+  permission_mode: "bypassPermissions"
+
+# -- Tool Parameters ---------------------------------------------------
+tools:
+  tokenizer_model: "" # optional
+  large_file_token_threshold: 30000
+  huge_file_token_threshold: 100000
+  line_max_length: 2000
+
+# -- Pricing (optional, for cost estimation) ---------------------------
+pricing:
+  input_per_token: 0.0
+  output_per_token: 0.0

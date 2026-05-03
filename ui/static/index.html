@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout Agent UI</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="/static/vendor/element-plus.css?v=4">
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/static/style.css?v=4">
+</head>
+<body>
+
+<!-- Loading placeholder shown before Vue mounts -->
+<div id="loading-placeholder" style="
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:#ffffff; color:#a1a1aa;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    z-index:9999;
+">
+    <img src="/static/scout_logo.png" alt="Scout" style="width:40px; height:40px; margin-bottom:14px; border-radius:6px;">
+    <div style="font-size:14px; font-weight:600; color:#09090b; letter-spacing:-0.3px;">Scout</div>
+    <div style="font-size:12px; margin-top:6px;">Loading...</div>
+</div>
+
+<div id="app">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="/static/scout_logo.png" alt="Scout" class="logo-icon" style="width:28px; height:28px; border-radius:4px;">
+                <span class="logo-text">Scout</span>
+            </div>
+            <el-tag :type="statusTagType" size="small" effect="dark" class="status-tag">
+                {{ statusText }}
+            </el-tag>
+        </div>
+        <div class="header-right">
+            <el-tag v-if="runId" size="small" effect="plain" class="run-tag">
+                Run: {{ runId }}
+            </el-tag>
+            <span class="turn-info" v-if="metrics.turn > 0">
+                Turn {{ metrics.turn }} / {{ metrics.max_turns }}
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Layout: 3 columns — Query | Trajectory | Dashboard -->
+    <main class="app-main">
+        <!-- LEFT PANEL: Query + Upload + Config -->
+        <aside class="panel panel-query" :style="{ width: queryWidth + 'px' }">
+            <!-- Query Input -->
+            <section class="panel-section">
+                <h3 class="section-title">Query</h3>
+                <el-input
+                    v-model="queryText"
+                    type="textarea"
+                    :rows="5"
+                    placeholder="Enter your question..."
+                    :disabled="isRunning"
+                    resize="vertical"
+                ></el-input>
+                <div class="btn-row">
+                    <el-button
+                        type="primary"
+                        class="submit-btn"
+                        @click="startQuery"
+                        :disabled="!queryText.trim() || isRunning"
+                        :loading="isRunning"
+                    >
+                        <el-icon v-if="!isRunning"><component :is="iconMap.CaretRight" /></el-icon>
+                        {{ isRunning ? 'Running...' : 'Run Agent' }}
+                    </el-button>
+                    <el-button
+                        class="reset-btn"
+                        @click="resetAll"
+                        :disabled="isRunning"
+                    >
+                        Reset
+                    </el-button>
+                </div>
+            </section>
+
+            <!-- File Upload -->
+            <section class="panel-section">
+                <h3 class="section-title">Document</h3>
+                <el-upload
+                    ref="uploadRef"
+                    class="file-upload"
+                    drag
+                    action="/api/upload"
+                    :on-success="onUploadSuccess"
+                    :on-error="onUploadError"
+                    :on-remove="onFileRemove"
+                    :on-exceed="onUploadExceed"
+                    :limit="1"
+                    :disabled="isRunning"
+                    :file-list="fileList"
+                    accept=".txt,.pdf,.md,.json,.jsonl,.csv,.html,.xml,.log"
+                >
+                    <el-icon class="upload-icon"><component :is="iconMap.UploadFilled" /></el-icon>
+                    <div class="upload-text">Drop file here or click</div>
+                    <template #tip>
+                        <div class="upload-tip">txt, pdf, md, json, csv, html</div>
+                    </template>
+                </el-upload>
+            </section>
+
+            <!-- Config Panel -->
+            <section class="panel-section">
+                <h3 class="section-title">Settings</h3>
+                <el-form label-position="top" size="small" class="config-form">
+                    <el-form-item label="Server">
+                        <el-select v-model="config.server" :disabled="isRunning" @change="saveConfig">
+                            <el-option label="Tencent" value="tencent"></el-option>
+                            <el-option label="DeepSeek" value="deepseek"></el-option>
+                            <el-option label="Local" value="local"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="Model">
+                        <el-input v-model="config.model" :disabled="isRunning" @blur="saveConfig"></el-input>
+                    </el-form-item>
+                    <el-form-item label="Max Turns">
+                        <el-input-number
+                            v-model="config.max_turns"
+                            :min="1" :max="500"
+                            :disabled="isRunning"
+                            @change="saveConfig"
+                        ></el-input-number>
+                    </el-form-item>
+                </el-form>
+            </section>
+        </aside>
+
+        <!-- DIVIDER: Query ↔ Trajectory -->
+        <div class="panel-divider" @mousedown="startResize($event, 'query')"></div>
+
+        <!-- CENTER PANEL: Execution Trajectory -->
+        <section class="panel panel-trajectory">
+            <div class="trajectory-header">
+                <h3 class="section-title">Execution Trajectory</h3>
+                <div class="trajectory-actions" v-if="steps.length > 0">
+                    <el-button size="small" text @click="expandAll">Expand All</el-button>
+                    <el-button size="small" text @click="collapseAll">Collapse All</el-button>
+                    <el-button size="small" text @click="clearSteps">Clear</el-button>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="steps.length === 0" class="empty-state">
+                <el-icon size="48" color="#4a5568"><component :is="iconMap.Monitor" /></el-icon>
+                <p>Submit a query to see the agent's execution trajectory</p>
+            </div>
+
+            <!-- Steps timeline -->
+            <div class="trajectory-list" ref="trajectoryList">
+                <div
+                    v-for="(step, index) in steps"
+                    :key="index"
+                    :class="[
+                        'step-card',
+                        step.type === 'tool' ? toolBorderClass(step.tool_name) : 'step-' + step.type,
+                        step.type === 'tool' && step.loading ? 'tool-loading' : '',
+                    ]"
+                >
+                    <!-- ═══ STEP HEADER ═══ -->
+                    <div class="step-header" @click="step.collapsed = !step.collapsed">
+                        <!-- Badge for tool type -->
+                        <span v-if="step.type === 'tool'" class="step-badge badge-tool" :class="'badge-cat-' + step.category">
+                            {{ toolIconChar(step.tool_name) }} {{ toolDisplayName(step.tool_name) }}
+                        </span>
+                        <!-- Badge for thinking/text/fallback -->
+                        <span v-else class="step-badge" :class="'badge-' + step.type">
+                            {{ stepIcon(step.type) }} {{ stepLabel(step.type) }}
+                        </span>
+
+                        <span class="step-meta">
+                            <!-- Loading spinner for tool awaiting result -->
+                            <span v-if="step.type === 'tool' && step.loading" class="tool-spinner"></span>
+                            <!-- Error indicator -->
+                            <el-tag v-if="step.type === 'tool' && step.result_error" size="small" type="danger" effect="dark">failed</el-tag>
+                            <!-- Tool name (for non-tool types that have it) -->
+                            <span v-if="step.type !== 'tool' && step.tool_name" class="tool-name">{{ step.tool_name }}</span>
+                            <span class="step-num">#{{ step.step }}</span>
+                        </span>
+                        <el-icon class="collapse-icon" :class="{ rotated: !step.collapsed }">
+                            <component :is="iconMap.ArrowRight" />
+                        </el-icon>
+                    </div>
+
+                    <!-- ═══ STEP CONTENT ═══ -->
+                    <div v-show="!step.collapsed" class="step-content">
+
+                        <!-- ── Thinking ── -->
+                        <div v-if="step.type === 'thinking'" class="thinking-content" v-html="renderMarkdown(step.content)"></div>
+
+                        <!-- ── Text ── -->
+                        <div v-if="step.type === 'text'" class="text-content" v-html="renderMarkdown(step.content)"></div>
+
+                        <!-- ── Fallback tool_result (unmatched) ── -->
+                        <div v-if="step.type === 'tool_result'" :class="['tool-result-content', step.is_error ? 'result-error' : 'result-success']">
+                            <div class="tool-result-label">{{ step.is_error ? 'Error:' : 'Result:' }}</div>
+                            <pre class="tool-json">{{ formatToolResult(step.content) }}</pre>
+                        </div>
+
+                        <!-- ═══════════════════════════════════════ -->
+                        <!-- ══ COMBINED TOOL STEP RENDERING ══════ -->
+                        <!-- ═══════════════════════════════════════ -->
+                        <template v-if="step.type === 'tool'">
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ TODOWRITE                     ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-if="step.category === 'todo'" class="tool-todo">
+                                <div class="todo-list" v-if="step.tool_input && step.tool_input.todos">
+                                    <div v-for="(todo, ti) in step.tool_input.todos" :key="ti"
+                                         :class="['todo-item', 'todo-' + (todo.status || 'pending')]">
+                                        <span class="todo-status-icon">{{ todoStatusIcon(todo.status) }}</span>
+                                        <span class="todo-content">{{ todo.content }}</span>
+                                        <el-tag v-if="todo.priority" :type="todoPriorityType(todo.priority)" size="small" effect="plain" class="todo-priority">
+                                            {{ todo.priority }}
+                                        </el-tag>
+                                    </div>
+                                </div>
+                                <!-- Result -->
+                                <div v-if="step.result && !step.loading" class="tool-result-inline tool-result-ok">
+                                    Updated
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ READ FILE                     ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'read'" class="tool-read">
+                                <div class="tool-input-summary">
+                                    <span class="input-label">File:</span>
+                                    <code class="input-value">{{ step.tool_input.filePath || step.tool_input.file_path || '?' }}</code>
+                                    <span v-if="step.tool_input.offset" class="input-detail">
+                                        lines {{ step.tool_input.offset }}<span v-if="step.tool_input.limit">-{{ step.tool_input.offset + step.tool_input.limit }}</span>
+                                    </span>
+                                </div>
+                                <!-- Result: collapsible code block -->
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                        <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                        <span>{{ step.result_collapsed ? 'Show content' : 'Hide content' }}</span>
+                                        <span class="result-size">{{ truncateText(extractResultText(step.result), 60) }}</span>
+                                    </div>
+                                    <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(extractResultText(step.result), 5000) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ GREP SEARCH                   ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'grep'" class="tool-grep">
+                                <div class="tool-input-summary">
+                                    <span class="input-label">Pattern:</span>
+                                    <code class="input-value grep-pattern">{{ step.tool_input.pattern }}</code>
+                                    <span v-if="step.tool_input.path" class="input-detail">
+                                        in <code>{{ step.tool_input.path }}</code>
+                                    </span>
+                                    <span v-if="step.tool_input.include" class="input-detail">
+                                        ({{ step.tool_input.include }})
+                                    </span>
+                                </div>
+                                <!-- Result: collapsible matches -->
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                        <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                        <span>{{ step.result_collapsed ? 'Show matches' : 'Hide matches' }}</span>
+                                    </div>
+                                    <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(extractResultText(step.result), 5000) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ GLOB FILES                    ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'glob'" class="tool-glob">
+                                <div class="tool-input-summary">
+                                    <span class="input-label">Pattern:</span>
+                                    <code class="input-value">{{ step.tool_input.pattern }}</code>
+                                    <span v-if="step.tool_input.path" class="input-detail">
+                                        in <code>{{ step.tool_input.path }}</code>
+                                    </span>
+                                </div>
+                                <!-- Result: collapsible file list -->
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                        <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                        <span>{{ step.result_collapsed ? 'Show files' : 'Hide files' }}</span>
+                                    </div>
+                                    <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(extractResultText(step.result), 5000) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ FILE INFO                     ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'file_info'" class="tool-file-info">
+                                <div class="tool-input-summary">
+                                    <span class="input-label">File:</span>
+                                    <code class="input-value">{{ step.tool_input.file_path || '?' }}</code>
+                                </div>
+                                <!-- Result: parsed info card -->
+                                <div v-if="step.result && !step.loading" class="info-card">
+                                    <template v-if="parseResultJson(step.result)">
+                                        <div class="info-row" v-if="parseResultJson(step.result).estimated_tokens">
+                                            <span class="info-label">Tokens:</span>
+                                            <span class="info-val">{{ formatNumber(parseResultJson(step.result).estimated_tokens) }}</span>
+                                        </div>
+                                        <div class="info-row" v-if="parseResultJson(step.result).file_size_bytes">
+                                            <span class="info-label">Size:</span>
+                                            <span class="info-val">{{ formatNumber(parseResultJson(step.result).file_size_bytes) }} bytes</span>
+                                        </div>
+                                        <div class="info-row" v-if="parseResultJson(step.result).needs_normalization !== undefined">
+                                            <span class="info-label">Needs normalization:</span>
+                                            <span class="info-val">{{ parseResultJson(step.result).needs_normalization ? 'Yes' : 'No' }}</span>
+                                        </div>
+                                        <div class="info-row" v-if="parseResultJson(step.result).reading_strategy">
+                                            <span class="info-label">Strategy:</span>
+                                            <el-tag size="small" effect="dark" type="info">{{ parseResultJson(step.result).reading_strategy.approach }}</el-tag>
+                                        </div>
+                                    </template>
+                                    <pre v-else class="tool-json">{{ formatToolResult(step.result) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ NORMALIZE DOCUMENT            ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'normalize'" class="tool-normalize">
+                                <div class="tool-input-summary">
+                                    <span class="input-label">File:</span>
+                                    <code class="input-value">{{ step.tool_input.file_path || '?' }}</code>
+                                    <span v-if="step.tool_input.max_length" class="input-detail">
+                                        (max: {{ formatNumber(step.tool_input.max_length) }})
+                                    </span>
+                                </div>
+                                <div v-if="step.result && !step.loading" class="tool-result-inline tool-result-ok">
+                                    {{ extractResultText(step.result) || 'Normalized' }}
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ WORKSPACE UPDATE              ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'ws_update'" class="tool-ws-update">
+                                <div class="tool-input-summary">
+                                    <span v-if="step.tool_input.source" class="input-detail">
+                                        <span class="input-label">Source:</span>
+                                        <code class="input-value">{{ truncateText(step.tool_input.source, 60) }}</code>
+                                    </span>
+                                    <span v-if="step.tool_input.action" class="input-detail">
+                                        <el-tag size="small" effect="plain" type="info">{{ step.tool_input.action }}</el-tag>
+                                    </span>
+                                </div>
+                                <div v-if="step.tool_input.tags && step.tool_input.tags.length" class="ws-input-tags">
+                                    <el-tag v-for="tag in step.tool_input.tags" :key="tag" size="small" effect="plain" type="success" class="ws-input-tag">{{ tag }}</el-tag>
+                                </div>
+                                <div v-if="step.tool_input.summary" class="ws-input-summary">
+                                    {{ step.tool_input.summary }}
+                                </div>
+                                <!-- Result -->
+                                <div v-if="step.result && !step.loading" class="tool-result-inline tool-result-ok">
+                                    <template v-if="parseResultJson(step.result)">
+                                        {{ parseResultJson(step.result).message || 'Updated' }}
+                                        <span class="result-detail">({{ parseResultJson(step.result).total_entries }} entries, {{ formatNumber(parseResultJson(step.result).current_token_count) }} tokens)</span>
+                                    </template>
+                                    <template v-else>Updated</template>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ WORKSPACE VIEW                ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'ws_view'" class="tool-ws-view">
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <template v-if="parseResultJson(step.result)">
+                                        <div class="ws-view-meta">
+                                            <span>{{ parseResultJson(step.result).entry_count || 0 }} entries</span>
+                                            <span v-if="parseResultJson(step.result).question" class="ws-view-question">
+                                                Q: {{ truncateText(parseResultJson(step.result).question, 80) }}
+                                            </span>
+                                        </div>
+                                        <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                            <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                            <span>{{ step.result_collapsed ? 'Show workspace' : 'Hide workspace' }}</span>
+                                        </div>
+                                        <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(parseResultJson(step.result).full_content || extractResultText(step.result), 5000) }}</pre>
+                                    </template>
+                                    <template v-else>
+                                        <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                            <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                            <span>{{ step.result_collapsed ? 'Show content' : 'Hide content' }}</span>
+                                        </div>
+                                        <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(extractResultText(step.result), 5000) }}</pre>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ WORKSPACE SEARCH              ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'ws_search'" class="tool-ws-search">
+                                <div class="tool-input-summary">
+                                    <span v-if="step.tool_input.keyword" class="input-detail">
+                                        <span class="input-label">Keyword:</span>
+                                        <code class="input-value grep-pattern">{{ step.tool_input.keyword }}</code>
+                                    </span>
+                                    <span v-if="step.tool_input.tag" class="input-detail">
+                                        <span class="input-label">Tag:</span>
+                                        <el-tag size="small" effect="plain" type="success">{{ step.tool_input.tag }}</el-tag>
+                                    </span>
+                                </div>
+                                <!-- Result: collapsible search results -->
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <template v-if="parseResultJson(step.result)">
+                                        <div class="ws-search-meta">
+                                            {{ parseResultJson(step.result).match_count || 0 }} matches found
+                                        </div>
+                                    </template>
+                                    <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                        <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                        <span>{{ step.result_collapsed ? 'Show results' : 'Hide results' }}</span>
+                                    </div>
+                                    <pre v-show="!step.result_collapsed" class="tool-code-block">{{ truncateText(extractResultText(step.result), 5000) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ WORKSPACE EVALUATE            ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else-if="step.category === 'ws_evaluate'" class="tool-ws-evaluate">
+                                <div v-if="step.result && !step.loading" class="eval-card">
+                                    <template v-if="parseResultJson(step.result)">
+                                        <div class="eval-verdict" :class="parseResultJson(step.result).is_sufficient ? 'verdict-pass' : 'verdict-fail'">
+                                            <span class="verdict-icon">{{ parseResultJson(step.result).is_sufficient ? '\u2713' : '\u2717' }}</span>
+                                            <span class="verdict-text">{{ parseResultJson(step.result).is_sufficient ? 'SUFFICIENT' : 'INSUFFICIENT' }}</span>
+                                            <span class="verdict-confidence" v-if="parseResultJson(step.result).confidence !== undefined">
+                                                {{ (parseResultJson(step.result).confidence * 100).toFixed(0) }}% confidence
+                                            </span>
+                                        </div>
+                                        <div v-if="parseResultJson(step.result).reasoning" class="eval-reasoning">
+                                            {{ parseResultJson(step.result).reasoning }}
+                                        </div>
+                                        <div v-if="parseResultJson(step.result).missing_info" class="eval-missing">
+                                            <span class="eval-missing-label">Missing:</span>
+                                            {{ parseResultJson(step.result).missing_info }}
+                                        </div>
+                                        <div v-if="parseResultJson(step.result).draft_answer" class="eval-draft">
+                                            <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                                <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                                <span>Draft answer</span>
+                                            </div>
+                                            <div v-show="!step.result_collapsed" class="eval-draft-content" v-html="renderMarkdown(parseResultJson(step.result).draft_answer)"></div>
+                                        </div>
+                                    </template>
+                                    <pre v-else class="tool-json">{{ formatToolResult(step.result) }}</pre>
+                                </div>
+                                <div v-else-if="step.loading" class="tool-input-summary">
+                                    <span class="input-label">Evaluating workspace sufficiency...</span>
+                                </div>
+                            </div>
+
+                            <!-- ╔═══════════════════════════════╗ -->
+                            <!-- ║ GENERIC / UNKNOWN TOOLS       ║ -->
+                            <!-- ╚═══════════════════════════════╝ -->
+                            <div v-else class="tool-generic">
+                                <div class="tool-input-label">Input:</div>
+                                <pre class="tool-json">{{ formatJson(step.tool_input) }}</pre>
+                                <!-- Result -->
+                                <div v-if="step.result && !step.loading" class="tool-result-block">
+                                    <div class="result-toggle" @click.stop="toggleResultCollapse(step)">
+                                        <span class="toggle-icon">{{ step.result_collapsed ? '\u25B6' : '\u25BC' }}</span>
+                                        <span>{{ step.result_collapsed ? 'Show result' : 'Hide result' }}</span>
+                                    </div>
+                                    <pre v-show="!step.result_collapsed" :class="['tool-json', step.result_error ? 'result-error-border' : '']">{{ formatToolResult(step.result) }}</pre>
+                                </div>
+                            </div>
+
+                            <!-- Loading indicator (shown at bottom of any tool card while waiting) -->
+                            <div v-if="step.loading" class="tool-loading-bar">
+                                <div class="loading-bar-inner"></div>
+                            </div>
+
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Final Result Card -->
+                <div v-if="finalResult" class="step-card step-result">
+                    <div class="step-header">
+                        <span class="step-badge badge-result">Final Result</span>
+                    </div>
+                    <div class="step-content result-content" v-html="renderMarkdown(finalResult)"></div>
+                </div>
+
+                <!-- Error Card -->
+                <div v-if="runError" class="step-card step-error">
+                    <div class="step-header">
+                        <span class="step-badge badge-error">Error</span>
+                    </div>
+                    <div class="step-content error-content">{{ runError }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIVIDER: Trajectory ↔ Dashboard -->
+        <div class="panel-divider" @mousedown="startResize($event, 'dash')"></div>
+
+        <!-- RIGHT PANEL: Dashboard + Workspace -->
+        <aside class="panel panel-dashboard" :style="{ width: dashWidth + 'px' }">
+            <!-- Dashboard -->
+            <section class="panel-section">
+                <h3 class="section-title">Dashboard</h3>
+
+                <!-- Phase indicator -->
+                <div class="dashboard-item">
+                    <span class="dash-label">Phase</span>
+                    <el-tag :type="phaseTagType" size="small" effect="dark" class="phase-tag">
+                        {{ metrics.phase.toUpperCase() }}
+                    </el-tag>
+                </div>
+
+                <!-- Turn progress -->
+                <div class="dashboard-item">
+                    <span class="dash-label">Progress</span>
+                    <el-progress
+                        :percentage="turnPercentage"
+                        :stroke-width="12"
+                        :format="() => metrics.turn + '/' + metrics.max_turns"
+                        :color="turnProgressColor"
+                    ></el-progress>
+                </div>
+
+                <!-- Token usage -->
+                <div class="dashboard-item">
+                    <span class="dash-label">Input Tokens</span>
+                    <span class="dash-value">{{ formatNumber(metrics.input_tokens) }}</span>
+                </div>
+                <div class="dashboard-item">
+                    <span class="dash-label">Output Tokens</span>
+                    <span class="dash-value">{{ formatNumber(metrics.output_tokens) }}</span>
+                </div>
+                <div class="dashboard-item">
+                    <span class="dash-label">Total Tokens</span>
+                    <span class="dash-value dash-total">{{ formatNumber(metrics.input_tokens + metrics.output_tokens) }}</span>
+                </div>
+
+                <!-- Tool usage -->
+                <div class="dashboard-item tool-usage" v-if="Object.keys(metrics.tool_counts).length > 0">
+                    <span class="dash-label">Tool Usage</span>
+                    <div class="tool-bars">
+                        <div v-for="(count, name) in sortedToolCounts" :key="name" class="tool-bar-row">
+                            <span class="tool-bar-name">{{ shortToolName(name) }}</span>
+                            <div class="tool-bar-track">
+                                <div class="tool-bar-fill" :style="{ width: toolBarWidth(count) }"></div>
+                            </div>
+                            <span class="tool-bar-count">{{ count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Workspace Viewer -->
+            <section class="panel-section workspace-section">
+                <h3 class="section-title">
+                    Workspace
+                    <el-badge :value="workspaceEntries.length" v-if="workspaceEntries.length > 0" class="ws-badge"></el-badge>
+                </h3>
+
+                <div v-if="workspaceEntries.length === 0" class="empty-workspace">
+                    <span>No entries yet</span>
+                </div>
+
+                <div v-for="(entry, idx) in workspaceEntries" :key="idx" class="ws-entry" @click="entry._expanded = !entry._expanded">
+                    <div class="ws-entry-header">
+                        <span class="ws-entry-key">{{ entry.key || 'Entry ' + (idx + 1) }}</span>
+                        <el-icon class="collapse-icon" :class="{ rotated: entry._expanded }">
+                            <component :is="iconMap.ArrowRight" />
+                        </el-icon>
+                    </div>
+                    <div class="ws-entry-tags" v-if="entry.tags && entry.tags.length">
+                        <el-tag v-for="tag in entry.tags" :key="tag" size="small" type="info" effect="plain" class="ws-tag">{{ tag }}</el-tag>
+                    </div>
+                    <div v-if="entry.summary" class="ws-entry-summary">{{ entry.summary }}</div>
+                    <div v-show="entry._expanded" class="ws-entry-content">
+                        <pre>{{ entry.content }}</pre>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </main>
+
+    <!-- Footer status bar -->
+    <footer class="app-footer">
+        <span>{{ statusText }}</span>
+        <span v-if="metrics.turn > 0">
+            | Turn {{ metrics.turn }}/{{ metrics.max_turns }}
+            | Tokens: {{ formatNumber(metrics.input_tokens + metrics.output_tokens) }}
+        </span>
+        <span class="footer-right">Scout Agent UI v1.0</span>
+    </footer>
+</div>
+
+<!-- Vendor JS loaded at bottom so HTML renders immediately -->
+<script src="/static/vendor/vue.global.prod.js?v=4"></script>
+<script src="/static/vendor/element-plus.js?v=4"></script>
+<script src="/static/vendor/element-plus-icons.js?v=4"></script>
+<script src="/static/vendor/marked.min.js?v=4"></script>
+<script src="/static/app.js?v=4"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+# Scout project
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+venv/
+.venv/
+ENV/
+
+# Scout runtime
+scout/workspace/
+scout/logs/
+scout/sessions/data/
+
+# Proxy
+proxy/.claude-code-router/config.json
+proxy/log/
+proxy/claude-code-router/node_modules/
+proxy/.env
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+tmp/
+temp/
+*.tmp

@@ -1,0 +1,71 @@
+{
+    "HOST": "0.0.0.0",
+    "APIKEY": "wink",
+    "LOG": true,
+    "LOG_LEVEL": "info",
+    "LOG_FILE": "/root/.claude-code-router/claude-code-router.log",
+    "Providers": [
+        {
+            "name": "venus",
+            "api_base_url": "<YOUR_VENUS_API_BASE_URL>",
+            "api_key": "<YOUR_VENUS_API_KEY>",
+            "models": [
+                "deepseek-v3.1-terminus",
+                "deepseek-v3.2-exp",
+                "claude-4-5-sonnet-20250929",
+                "qwen3-32b-fp8",
+                "qwen3-30b-a3b-instruct-2507"
+            ],
+            "transformer": {
+                "use": [
+                    ["maxtoken", {"max_tokens": 150000}],
+                    ["sampling", {"temperature": 0.6}],
+                    "openrouter"
+                ]
+            }
+        },
+        {
+            "name": "vllm",
+            "api_base_url": "http://<YOUR_VLLM_HOST>:8080/v1/chat/completions",
+            "api_key": "",
+            "models": [
+                "your-custom-model-name"
+            ],
+            "transformer": {
+                "use": ["openai"]
+            }
+        },
+        {
+            "name": "ds",
+            "api_base_url": "https://api.deepseek.com/chat/completions",
+            "api_key": "<YOUR_DEEPSEEK_API_KEY>",
+            "models": [
+                "deepseek-chat",
+                "deepseek-reasoner"
+            ],
+            "transformer": {
+                "use": ["deepseek"],
+                "deepseek-chat": {
+                    "use": ["tooluse"]
+                }
+            }
+        },
+        {
+            "name": "openrouter",
+            "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+            "api_key": "<YOUR_OPENROUTER_API_KEY>",
+            "models": [
+                "anthropic/claude-opus-4.1",
+                "anthropic/claude-sonnet-4.5"
+            ],
+            "transformer": {
+                "use": ["openrouter"]
+            }
+        }
+    ],
+    "Router": {
+        "default": "venus,deepseek-v3.1-terminus",
+        "longContext": "venus,claude-4-5-sonnet-20250929",
+        "think": "venus,claude-4-5-sonnet-20250929"
+    }
+}

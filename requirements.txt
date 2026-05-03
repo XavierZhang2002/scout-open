@@ -1,0 +1,16 @@
+# Core
+claude-agent-sdk
+pyyaml>=6.0.0
+loguru
+tiktoken
+openai
+anyio
+
+# UI
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+
+# Testing
+pytest>=7.0.0

@@ -1,0 +1,11 @@
+services:
+  video_multi_agent_mcp:
+    env_file:
+      - .env
+    build: .
+    network_mode: "host"  # Use host network
+    ports:
+      - "3456:3456"
+    volumes:
+      - ./log:/root/.claude-code-router
+    restart: unless-stopped
