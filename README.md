@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="assets/scout_logo.png" alt="Scout Logo" width="120">
-</p>
-
-<h1 align="center">Scout (Open-Source)</h1>
+<h1 align="center"><img src="assets/scout_logo.png" alt="Scout Logo" width="32" style="vertical-align: middle;"> Scout (Open-Source)</h1>
 
 <h3 align="center">
   Active Information Foraging for Long-Text Understanding<br>with Decoupled Epistemic States
