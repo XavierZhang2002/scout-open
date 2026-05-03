@@ -45,11 +45,26 @@ async def evaluate_sufficiency(
         _base_url = base_url or os.getenv("EVAL_API_BASE_URL")
         _model = model or os.getenv("EVAL_MODEL", "claude-4-5-sonnet-20250929")
 
+        # If eval API is not explicitly configured, fall back to the Agent's API config.
+        # This allows workspace_evaluate to work without separate eval credentials.
+        if not _api_key or not _base_url:
+            _api_key = _api_key or os.getenv("ANTHROPIC_AUTH_TOKEN")
+            _base_url = _base_url or os.getenv("ANTHROPIC_BASE_URL")
+            # Use the agent's model if eval model is not set
+            if not _model or _model == "claude-4-5-sonnet-20250929":
+                agent_model = os.getenv("ANTHROPIC_MODEL", "")
+                if agent_model:
+                    _model = agent_model
+
         if not _api_key or not _base_url:
             return {
                 "is_sufficient": False,
-                "reasoning": "Evaluation API not configured (missing EVAL_API_KEY or EVAL_API_BASE_URL)",
+                "reasoning": "Evaluation API not configured (missing EVAL_API_KEY/EVAL_API_BASE_URL and no ANTHROPIC_AUTH_TOKEN/ANTHROPIC_BASE_URL fallback)",
             }
+
+        # Append /v1 to base_url if it looks like a raw CCR endpoint (no path)
+        if _base_url and not _base_url.rstrip("/").endswith("/v1"):
+            _base_url = _base_url.rstrip("/") + "/v1"
 
         client = OpenAI(api_key=_api_key, base_url=_base_url)
 

@@ -81,7 +81,6 @@ class QueryRequest(BaseModel):
 class ConfigUpdate(BaseModel):
     """PUT /api/config request body"""
 
-    server: Optional[str] = None
     model: Optional[str] = None
     max_turns: Optional[int] = None
     use_planner_agent: Optional[bool] = None
@@ -130,18 +129,14 @@ class RunResultResponse(BaseModel):
 class ConfigResponse(BaseModel):
     """GET /api/config response"""
 
-    server: Optional[str] = None
     model: Optional[str] = None
     max_turns: int = 200
     use_planner_agent: bool = True
     use_evaluator_agent: bool = True
-    permission_mode: str = "dontAsk"
+    permission_mode: str = "bypassPermissions"
     tokenizer_model: str = "deepseek-chat"
     large_file_token_threshold: int = 30000
     huge_file_token_threshold: int = 100000
-    available_servers: list[str] = Field(
-        default_factory=lambda: ["tencent", "deepseek", "local"]
-    )
 
 
 class UploadResponse(BaseModel):

@@ -171,11 +171,14 @@ class AgentRunner:
             # Build config from config.yaml
             config = load_config()
 
-            # Apply overrides
+            # Apply overrides (skip keys that don't exist on ScoutConfig)
             if config_overrides:
                 for key, value in config_overrides.items():
-                    if hasattr(config, key):
-                        setattr(config, key, value)
+                    if hasattr(config, key) and key != "server":
+                        try:
+                            setattr(config, key, value)
+                        except (AttributeError, TypeError):
+                            pass
 
             state.max_turns = config.max_turns
 
@@ -207,7 +210,6 @@ class AgentRunner:
                     "query": query,
                     "file_path": file_path,
                     "config": {
-                        "server": config.server,
                         "model": config.model,
                         "max_turns": config.max_turns,
                     },

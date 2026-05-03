@@ -72,7 +72,15 @@ api:
   model: "venus,deepseek-v3.1-terminus"   # "provider,model" format
 ```
 
-### 3. Run
+### 3. Start Claude Code Router
+
+Unless you are calling Anthropic API directly, you need CCR to translate the API protocol. Configure your LLM providers in `proxy/.claude-code-router/config.json` (see [proxy/README.md](proxy/README.md)), then:
+
+```bash
+cd proxy && bash deploy.bash && cd ..
+```
+
+### 4. Run
 
 ```bash
 # Single query mode
@@ -119,11 +127,9 @@ All configuration lives in a single `config.yaml` file at the project root. Copy
 
 ### LLM Backend Options
 
-Scout needs an **Anthropic Messages API-compatible** endpoint. You have two options:
+Scout communicates via the **Anthropic Messages API** protocol. Since most LLM providers (DeepSeek, Qwen, GPT, Gemini, etc.) do not natively support this protocol, you need the **Claude Code Router (CCR)** to act as a translation layer — unless you are calling the Anthropic API directly.
 
-**Option A: Direct API** — If you have access to Claude API or any compatible endpoint, point `base_url` directly at it.
-
-**Option B: Claude Code Router (included)** — A local proxy that converts Anthropic Messages API requests into OpenAI/other formats, enabling use of DeepSeek, Qwen, GPT, Gemini, and more:
+**Option A: Claude Code Router (recommended for most users)** — A local proxy (included in `proxy/`) that translates Anthropic Messages API into OpenAI/other formats, enabling use of virtually any LLM provider:
 
 ```bash
 cd proxy && bash deploy.bash   # Starts proxy on localhost:3456
@@ -135,6 +141,8 @@ The `model` field uses `"provider,model_name"` format for routing:
 - `"openrouter,anthropic/claude-sonnet-4.5"` — Route via OpenRouter
 
 See [proxy/README.md](proxy/README.md) for full setup guide.
+
+**Option B: Direct Anthropic API** — If you have direct access to the Anthropic API (api.anthropic.com), you can skip CCR entirely and point `base_url` directly at it. This is the only case where CCR is not needed.
 
 ### CLI Options
 
@@ -152,11 +160,13 @@ See [proxy/README.md](proxy/README.md) for full setup guide.
 
 ## Web UI
 
-Scout includes a web interface for interactive document querying with real-time agent visualization.
+Scout includes a web interface for interactive document querying with real-time agent visualization. The UI server embeds the Scout Agent directly — no separate backend process is needed.
 
 <p align="center">
-  <img src="assets/ui_screenshot.png" alt="Scout UI" width="80%">
+  <img src="assets/Scout-ui.png" alt="Scout UI" width="80%">
 </p>
+
+**Prerequisites:** `config.yaml` must be configured and CCR must be running (if using non-Anthropic models) before starting the UI.
 
 ```bash
 cd ui
@@ -165,10 +175,12 @@ python start.py --port 9000    # Custom port
 ```
 
 Features:
-- File upload (.txt, .pdf, .md, .json, .csv, .html, .xml, .log)
+- File upload (.txt, .md, .json, .csv, .html, .xml, .log)
 - Real-time WebSocket event stream (thinking, tool calls, results)
 - Workspace viewer (inspect the agent's epistemic state)
 - Configuration panel & metrics dashboard
+
+> **Note:** The Web UI is still under active development and may contain bugs. Contributions and PRs are welcome!
 
 ---
 
@@ -193,9 +205,7 @@ scout-open/
 │   ├── sessions/              # Checkpoint/resume (optional)
 │   └── permissions/           # Tool access control
 ├── ui/                        # Web UI (FastAPI + Vue 3)
-├── proxy/                     # Claude Code Router (optional)
-└── docs/
-    └── differences.md         # Open-source vs. paper version comparison
+└── proxy/                     # Claude Code Router
 ```
 
 ### Hooks (Behavioral Enforcement)

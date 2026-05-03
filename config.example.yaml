@@ -4,15 +4,16 @@
 # ======================================================================
 
 # -- API Connection ----------------------------------------------------
-# Scout requires an Anthropic Messages API-compatible endpoint.
-# There are two ways to connect:
+# Scout communicates via the Anthropic Messages API protocol.
+# Most LLM providers (DeepSeek, Qwen, GPT, Gemini, etc.) do NOT natively
+# support this protocol, so you need Claude Code Router (CCR) to translate.
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
-# │ Option A: Through Claude Code Router (CCR) — recommended           │
+# │ Option A: Through Claude Code Router (CCR) — required for non-     │
+# │           Anthropic models (DeepSeek, Qwen, GPT, Gemini, etc.)     │
 # │                                                                     │
 # │ CCR is a local proxy (included in proxy/) that translates           │
-# │ Anthropic Messages API into OpenAI/other formats, allowing you      │
-# │ to use DeepSeek, Qwen, GPT, Gemini, Claude, and more.              │
+# │ Anthropic Messages API into OpenAI/other formats.                   │
 # │                                                                     │
 # │ Setup:                                                              │
 # │   1. Configure your providers in proxy/.claude-code-router/         │
@@ -26,11 +27,11 @@
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
-# │ Option B: Direct Anthropic API                                      │
+# │ Option B: Direct Anthropic API (only for Anthropic models)          │
 # │                                                                     │
-# │ If you have direct access to an Anthropic-compatible endpoint       │
-# │ (e.g., api.anthropic.com), point base_url directly at it.           │
-# │ No CCR needed in this case.                                         │
+# │ If you have direct access to Anthropic's API (api.anthropic.com),   │
+# │ you can skip CCR and point base_url directly at it.                 │
+# │ This is the ONLY case where CCR is not needed.                      │
 # └─────────────────────────────────────────────────────────────────────┘
 
 api:

@@ -59,12 +59,11 @@ UPLOAD_DIR = tempfile.mkdtemp(prefix="scout_uploads_")
 
 # Global config state (mutable, shared across runs)
 _config_state: dict[str, Any] = {
-    "server": "local",
     "model": "venus,deepseek-v3.1-terminus",
     "max_turns": 200,
     "use_planner_agent": True,
     "use_evaluator_agent": True,
-    "permission_mode": "dontAsk",
+    "permission_mode": "bypassPermissions",
     "tokenizer_model": "deepseek-chat",
     "large_file_token_threshold": 30000,
     "huge_file_token_threshold": 100000,
@@ -107,12 +106,11 @@ def create_app() -> FastAPI:
     async def get_config():
         """Get current agent configuration."""
         return ConfigResponse(
-            server=_config_state.get("server"),
             model=_config_state.get("model"),
             max_turns=_config_state.get("max_turns", 200),
             use_planner_agent=_config_state.get("use_planner_agent", True),
             use_evaluator_agent=_config_state.get("use_evaluator_agent", True),
-            permission_mode=_config_state.get("permission_mode", "dontAsk"),
+            permission_mode=_config_state.get("permission_mode", "bypassPermissions"),
             tokenizer_model=_config_state.get("tokenizer_model", "deepseek-chat"),
             large_file_token_threshold=_config_state.get(
                 "large_file_token_threshold", 30000
@@ -120,7 +118,6 @@ def create_app() -> FastAPI:
             huge_file_token_threshold=_config_state.get(
                 "huge_file_token_threshold", 100000
             ),
-            available_servers=["tencent", "deepseek", "local"],
         )
 
     @app.put("/api/config")
@@ -134,14 +131,6 @@ def create_app() -> FastAPI:
         logger.info(f"Config updated: {update_dict}")
         return {"status": "ok", "updated": list(update_dict.keys())}
 
-    @app.get("/api/config/servers")
-    async def list_servers():
-        """List available server presets (legacy — config.yaml based now)."""
-        return {
-            "servers": ["local"],
-            "current": _config_state.get("server", "local"),
-        }
-
     # ── File upload ───────────────────────────────────────────────────
 
     @app.post("/api/upload", response_model=UploadResponse)
@@ -153,7 +142,6 @@ def create_app() -> FastAPI:
         # Validate file extension
         allowed_extensions = {
             ".txt",
-            ".pdf",
             ".md",
             ".json",
             ".jsonl",

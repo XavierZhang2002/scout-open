@@ -371,12 +371,13 @@ async def query_agent(
 
             if isinstance(message, ResultMessage):
                 if message.is_error:
-                    raise Exception(f"Agent returned error: {message.result}")
+                    logger.error(f"Agent returned error: {message.result}")
+                    result = f"[Error] {message.result}"
                 else:
                     result = message.result
                     logger.info(f"Final Message: {message}")
-                    api_usage = message.usage
-                    num_turns = message.num_turns
+                api_usage = getattr(message, "usage", None)
+                num_turns = getattr(message, "num_turns", 0)
 
     tiktoken_usages = tracker.totals()
     cost = tracker.compute_cost(input_price, output_price)

@@ -1,6 +1,6 @@
 """
 Scout — MCP Tool Server
-
+"""
 
 from claude_agent_sdk import tool, create_sdk_mcp_server
 from typing import Dict, Any
@@ -626,7 +626,7 @@ async def workspace_search_tool(args: Dict[str, Any]):
 
     Returns:
     - is_sufficient: boolean
-    - reasoning: why it is/isn't sufficient
+    - reasoning: why it is or is not sufficient
     - missing_info: specific details to look for next
     """,
     {

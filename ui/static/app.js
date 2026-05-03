@@ -36,7 +36,6 @@ const app = createApp({
         let resizeStartWidth = 0;
 
         const config = reactive({
-            server: "tencent",
             model: "venus,claude-4-5-sonnet-20250929",
             max_turns: 200,
             use_planner_agent: true,
@@ -324,7 +323,6 @@ const app = createApp({
                 const resp = await fetch("/api/config");
                 const data = await resp.json();
                 Object.assign(config, {
-                    server: data.server || "tencent",
                     model: data.model || "venus,claude-4-5-sonnet-20250929",
                     max_turns: data.max_turns || 200,
                     use_planner_agent: data.use_planner_agent !== false,

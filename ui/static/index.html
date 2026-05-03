@@ -98,12 +98,12 @@
                     :limit="1"
                     :disabled="isRunning"
                     :file-list="fileList"
-                    accept=".txt,.pdf,.md,.json,.jsonl,.csv,.html,.xml,.log"
+                    accept=".txt,.md,.json,.jsonl,.csv,.html,.xml,.log"
                 >
                     <el-icon class="upload-icon"><component :is="iconMap.UploadFilled" /></el-icon>
                     <div class="upload-text">Drop file here or click</div>
                     <template #tip>
-                        <div class="upload-tip">txt, pdf, md, json, csv, html</div>
+                        <div class="upload-tip">txt, md, json, csv, html, xml, log</div>
                     </template>
                 </el-upload>
             </section>
@@ -112,15 +112,8 @@
             <section class="panel-section">
                 <h3 class="section-title">Settings</h3>
                 <el-form label-position="top" size="small" class="config-form">
-                    <el-form-item label="Server">
-                        <el-select v-model="config.server" :disabled="isRunning" @change="saveConfig">
-                            <el-option label="Tencent" value="tencent"></el-option>
-                            <el-option label="DeepSeek" value="deepseek"></el-option>
-                            <el-option label="Local" value="local"></el-option>
-                        </el-select>
-                    </el-form-item>
                     <el-form-item label="Model">
-                        <el-input v-model="config.model" :disabled="isRunning" @blur="saveConfig"></el-input>
+                        <el-input v-model="config.model" :disabled="isRunning" @blur="saveConfig" placeholder="e.g. venus,claude-4-5-sonnet-20250929"></el-input>
                     </el-form-item>
                     <el-form-item label="Max Turns">
                         <el-input-number
