@@ -1,4 +1,4 @@
-<h1 align="center"><img src="assets/scout_logo.png" alt="Scout Logo" width="32" style="vertical-align: middle;"> Scout (Open-Source)</h1>
+<h1 align="center"><img src="assets/scout_logo.png" alt="SCOUT Logo" width="32" style="vertical-align: middle;"> SCOUT (Open-Source)</h1>
 
 <h3 align="center">
   Active Information Foraging for Long-Text Understanding<br>with Decoupled Epistemic States
@@ -21,16 +21,16 @@
 </p>
 
 <p align="center">
-  <img src="assets/overview.png" alt="Scout Architecture Overview" width="60%">
+  <img src="assets/overview.png" alt="SCOUT Architecture Overview">
 </p>
 
 ---
 
 ## About This Repo
 
-This is the open-source implementation of the paper *"SCOUT: Active Information Foraging for Long-Text Understanding with Decoupled Epistemic States"* (ICML 2026).
+This is the open-source implementation of the paper *["SCOUT: Active Information Foraging for Long-Text Understanding with Decoupled Epistemic States"](https://xavierzhang2002.github.io/scout-page/)* (ICML 2026).
 
-The Scout Agent in the paper is built on an enterprise-internal agent framework with no current plans for open-source release. To promote community development and reproducibility, we re-implemented Scout using the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) — a free, publicly available agent development framework. This repository is that open-source implementation.
+The SCOUT Agent in the paper is built on an enterprise-internal agent framework with no current plans for open-source release. To promote community development and reproducibility, we re-implemented SCOUT using the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python) — a free, publicly available agent development framework. This repository is that open-source implementation.
 
 The core methodology remains identical — active information foraging, decoupled epistemic states, three-phase foraging strategy, and gap-diagnosed convergence. Due to differences between agent frameworks, there are some implementation-level distinctions (e.g., behavioral enforcement via SDK Hooks instead of framework-native policies). Through testing, this open-source version achieves performance comparable to the original.
 
@@ -121,7 +121,7 @@ All configuration lives in a single `config.yaml` file at the project root. Copy
 
 ### LLM Backend Options
 
-Scout communicates via the **Anthropic Messages API** protocol. Since most LLM providers (DeepSeek, Qwen, GPT, Gemini, etc.) do not natively support this protocol, you need the **Claude Code Router (CCR)** to act as a translation layer — unless you are calling the Anthropic API directly.
+SCOUT communicates via the **Anthropic Messages API** protocol. Since most LLM providers (DeepSeek, Qwen, GPT, Gemini, etc.) do not natively support this protocol, you need the **Claude Code Router (CCR)** to act as a translation layer — unless you are calling the Anthropic API directly.
 
 **Option A: Claude Code Router (recommended for most users)** — A local proxy (included in `proxy/`) that translates Anthropic Messages API into OpenAI/other formats, enabling use of virtually any LLM provider:
 
@@ -154,7 +154,7 @@ See [proxy/README.md](proxy/README.md) for full setup guide.
 
 ## Web UI
 
-Scout includes a web interface for interactive document querying with real-time agent visualization. The UI server embeds the Scout Agent directly — no separate backend process is needed.
+SCOUT includes a web interface for interactive document querying with real-time agent visualization. The UI server embeds the SCOUT Agent directly — no separate backend process is needed.
 
 <p align="center">
   <img src="assets/Scout-ui.png" alt="Scout UI" width="80%">
