@@ -225,6 +225,16 @@ scout-open/
 
 ---
 
+## Claude Code Skill (Experimental)
+
+We are experimenting with integrating SCOUT's core capabilities into a [Claude Code Skill](https://docs.anthropic.com/en/docs/claude-code/skills) — a native slash-command plugin that lets Claude Code itself act as the reading agent, without requiring the full SDK runtime.
+
+The skill lives in [`scout-skill/`](scout-skill/) and reimplements SCOUT's three-phase strategy (Plan → Gather → Verify) as a set of prompt modules and lightweight Python scripts that Claude Code can invoke directly.
+
+> **Status: Under active development and testing.** The skill is not yet production-ready. Contributions, feedback, and bug reports are welcome.
+
+---
+
 <p align="center">
   <sub>Built for the long-context reasoning community</sub>
 </p>
